@@ -56,6 +56,8 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             data = conn.recv(3)
             value, offset = decode_varint(data)
             logging.info(f"Received {value}")
+            logging.info(f"Raw data: {data}")
+
             
             if len(data) < 3:
                 continue
