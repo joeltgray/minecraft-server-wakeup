@@ -7,7 +7,7 @@ import json
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 IDLE_THRESHOLD = 60
-last_attempt_time = load_last_attempt_time()
+
 
 # Check if Minecraft server is already running
 if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
@@ -18,16 +18,18 @@ HOST = '0.0.0.0'
 PORT = 25565
 
 def save_last_attempt_time(attempt_time):
-    with open('/path/to/your/save/file.json', 'w') as f:
+    with open('/var/www/minecraft/lastLogin.json', 'w') as f:
         json.dump({"last_attempt_time": attempt_time}, f)
 
 def load_last_attempt_time():
     try:
-        with open('/path/to/your/save/file.json', 'r') as f:
+        with open('/var/www/minecraft/lastLogin.json', 'r') as f:
             data = json.load(f)
             return data["last_attempt_time"]
     except (FileNotFoundError, KeyError):
         return 0
+
+last_attempt_time = load_last_attempt_time()
 
 def wake_up_minecraft():
     logging.info("Waking up the server...")
