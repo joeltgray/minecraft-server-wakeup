@@ -5,14 +5,8 @@ import os
 import json
 
 # Setup logging
-logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(filename=LOG_FILE_PATH, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 IDLE_THRESHOLD = 60
-
-
-# Check if Minecraft server is already running
-if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
-    logging.info("Minecraft server is already running. Exiting monitor.")
-    exit()
 
 HOST = '0.0.0.0'
 PORT = 25565
@@ -49,12 +43,19 @@ def check_players_and_shutdown():
         if "There are" in line:
             # Extract the number of online players
             players_online = int(line.split()[2])
+            logging.info(f"Players online: {players_online}")
             if players_online == 0:
                 # If no players online for more than 30 minutes
                 if time.time() - last_attempt_time > IDLE_THRESHOLD:
+                    logging.info("No players online for more than 30 minutes. Shutting down the server...")
                     subprocess.call(["systemctl", "stop", "minecraft-server.service"])
                     save_last_attempt_time(time.time())
 
+# Check if Minecraft server is already running
+if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
+    check_players_and_shutdown()
+    logging.info("Minecraft server is already running. Exiting monitor.")
+    exit()
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     logging.info("Minecraft server is NOT already running. Continuing monitor.")
