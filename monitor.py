@@ -36,7 +36,7 @@ def check_players_and_shutdown():
     if not os.path.exists('/var/www/minecraft/playerMonitor'):
         with open('/var/www/minecraft/playerMonitor', 'w') as f:
             pass  # Just creating the file
-        
+
     # Send the list command to the server and capture the output
     output = subprocess.getoutput('screen -S minecraft -X stuff "list\n"')
     time.sleep(2)  # give the server a second to respond
@@ -49,7 +49,7 @@ def check_players_and_shutdown():
     for line in lines:
         if "There are" in line:
             # Extract the number of online players
-            players_online = int(line.split()[2])
+            players_online = int(line.split()[5])
             logging.info(f"Players online: {players_online}")
             if players_online == 0:
                 # If no players online for more than 30 minutes
