@@ -8,7 +8,7 @@ import time
 # Setup logging
 LOG_FILE_PATH = "/var/www/minecraft/monitor.log"
 logging.basicConfig(filename=LOG_FILE_PATH, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
-IDLE_THRESHOLD = 60
+IDLE_THRESHOLD = 60 #seconds
 
 HOST = '0.0.0.0'
 PORT = 25565
@@ -52,8 +52,11 @@ def check_players_and_shutdown():
             players_online = int(line.split()[5])
             logging.info(f"Players online: {players_online}")
             if players_online == 0:
+                logging.info("No players online. Checking if we should shut down the server...")
                 # If no players online for more than 30 minutes
                 if time.time() - last_attempt_time > IDLE_THRESHOLD:
+                    logging.info("Current time: " + str(time.time()))
+                    logging.info("Last attempt time: " + str(last_attempt_time))
                     logging.info("No players online for more than 30 minutes. Shutting down the server...")
                     subprocess.call(["systemctl", "stop", "minecraft-server.service"])
                     save_last_attempt_time(time.time())
