@@ -13,19 +13,19 @@ IDLE_THRESHOLD = 60 #seconds
 HOST = '0.0.0.0'
 PORT = 25565
 
-def save_last_attempt_time(attempt_time):
+def save_last_login_time(login_time):
     with open('/var/www/minecraft/lastLogin.json', 'w') as f:
-        json.dump({"last_attempt_time": attempt_time}, f)
+        json.dump({"last_login_time": login_time}, f)
 
-def load_last_attempt_time():
+def load_last_login_time():
     try:
         with open('/var/www/minecraft/lastLogin.json', 'r') as f:
             data = json.load(f)
-            return data["last_attempt_time"]
+            return data["last_login_time"]
     except (FileNotFoundError, KeyError):
         return 0
 
-last_attempt_time = load_last_attempt_time()
+last_attempt_time = load_last_login_time()
 
 def wake_up_minecraft():
     logging.info("Waking up the server...")
@@ -59,7 +59,9 @@ def check_players_and_shutdown():
                     logging.info("Last attempt time: " + str(last_attempt_time))
                     logging.info("No players online for more than 30 minutes. Shutting down the server...")
                     subprocess.call(["systemctl", "stop", "minecraft-server.service"])
-                    save_last_attempt_time(time.time())
+                    
+            elif players_online > 0:
+                save_last_login_time(time.time())
 
 # Check if Minecraft server is already running
 if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
