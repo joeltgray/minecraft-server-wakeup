@@ -5,6 +5,7 @@ import os
 import json
 
 # Setup logging
+LOG_FILE_PATH = "/var/www/minecraft/monitor.log"
 logging.basicConfig(filename=LOG_FILE_PATH, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
 IDLE_THRESHOLD = 60
 
