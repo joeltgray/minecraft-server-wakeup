@@ -2,9 +2,12 @@ import socket
 import logging
 import subprocess
 import os
+import json
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+IDLE_THRESHOLD = 60
+last_attempt_time = load_last_attempt_time()
 
 # Check if Minecraft server is already running
 if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
@@ -14,9 +17,42 @@ if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
 HOST = '0.0.0.0'
 PORT = 25565
 
+def save_last_attempt_time(attempt_time):
+    with open('/path/to/your/save/file.json', 'w') as f:
+        json.dump({"last_attempt_time": attempt_time}, f)
+
+def load_last_attempt_time():
+    try:
+        with open('/path/to/your/save/file.json', 'r') as f:
+            data = json.load(f)
+            return data["last_attempt_time"]
+    except (FileNotFoundError, KeyError):
+        return 0
+
 def wake_up_minecraft():
     logging.info("Waking up the server...")
     subprocess.call(["/bin/bash", "/var/www/minecraft/minecraft-wakeup.sh"])
+
+def check_players_and_shutdown():
+    # Send the list command to the server and capture the output
+    output = subprocess.getoutput('screen -S minecraft -X stuff "list\n"')
+    time.sleep(2)  # give the server a second to respond
+    output = subprocess.getoutput('screen -S minecraft -X hardcopy /tmp/mc_output')
+    
+    # Read the hardcopy file
+    with open('/tmp/mc_output', 'r') as f:
+        lines = f.readlines()
+    
+    for line in lines:
+        if "There are" in line:
+            # Extract the number of online players
+            players_online = int(line.split()[2])
+            if players_online == 0:
+                # If no players online for more than 30 minutes
+                if time.time() - last_attempt_time > IDLE_THRESHOLD:
+                    subprocess.call(["systemctl", "stop", "minecraft-server.service"])
+                    save_last_attempt_time(time.time())
+
 
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     logging.info("Minecraft server is NOT already running. Continuing monitor.")
