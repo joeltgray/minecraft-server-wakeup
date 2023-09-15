@@ -25,7 +25,7 @@ def load_last_login_time():
     except (FileNotFoundError, KeyError):
         return 0
 
-last_attempt_time = load_last_login_time()
+last_login_time = load_last_login_time()
 
 def wake_up_minecraft():
     logging.info("Waking up the server...")
@@ -51,12 +51,13 @@ def check_players_and_shutdown():
             # Extract the number of online players
             players_online = int(line.split()[5])
             logging.info(f"Players online: {players_online}")
+            logging.info("Current time: " + str(time.time()))
+            logging.info("Last login time: " + str(last_login_time))
             if players_online == 0:
                 logging.info("No players online. Checking if we should shut down the server...")
                 # If no players online for more than 30 minutes
-                if time.time() - last_attempt_time > IDLE_THRESHOLD:
-                    logging.info("Current time: " + str(time.time()))
-                    logging.info("Last attempt time: " + str(last_attempt_time))
+                if time.time() - last_login_time > IDLE_THRESHOLD:
+                    
                     logging.info("No players online for more than 30 minutes. Shutting down the server...")
                     subprocess.call(["systemctl", "stop", "minecraft-server.service"])
                     
