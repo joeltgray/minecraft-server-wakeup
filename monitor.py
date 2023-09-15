@@ -1,37 +1,42 @@
 import socket
-import time
-import subprocess
 import logging
+import subprocess
+import os
 
 # Setup logging
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-# Socket setup to monitor port 25565
-s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-s.bind(("0.0.0.0", 25565))
-s.listen(5)
-logging.info("Started listening on port 25565")
+# Check if Minecraft server is already running
+if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
+    logging.info("Minecraft server is already running. Exiting monitor.")
+    exit()
 
-# Debounce function
-def debounce(seconds):
-    def decorator(fn):
-        def wrapper(*args, **kwargs):
-            if hasattr(wrapper, '_last_called'):
-                elapsed = time.time() - wrapper._last_called
-                if elapsed < seconds:
-                    return
-            wrapper._last_called = time.time()
-            return fn(*args, **kwargs)
-        return wrapper
-    return decorator
+HOST = '0.0.0.0'
+PORT = 25565
+DEBOUNCE_TIME = 5
+last_attempt_time = 0
 
-@debounce(5)  # ensures the function can't be called more than once every 5 seconds
-def wakeup_server():
+def wake_up_minecraft():
     logging.info("Waking up the server...")
-    subprocess.run(["/var/www/minecraft/minecraft-wakeup.sh"])
+    subprocess.call(["/bin/bash", "/var/www/minecraft/minecraft-wakeup.sh"])
 
-while True:
-    connection, address = s.accept()
-    logging.info(f"Connection received from {address}")
-    wakeup_server()
-    connection.close()
+with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+    s.bind((HOST, PORT))
+    s.listen()
+
+    logging.info(f"Started listening on port {PORT}")
+    
+    while True:
+        conn, addr = s.accept()
+        with conn:
+            logging.info(f"Connection received from {addr}")
+            
+            # Read the initial data from the connection (at least 3 bytes)
+            data = conn.recv(3)
+            logging.info(f"Received {data}")
+            if len(data) < 3:
+                continue
+
+            # Check if it's a login packet (value 2 after handshake packet ID)
+            if data[2] == 2:
+                wake_up_minecraft()
