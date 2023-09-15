@@ -35,10 +35,10 @@ def check_players_and_shutdown():
     # Send the list command to the server and capture the output
     output = subprocess.getoutput('screen -S minecraft -X stuff "list\n"')
     time.sleep(2)  # give the server a second to respond
-    output = subprocess.getoutput('screen -S minecraft -X hardcopy /tmp/mc_output')
+    output = subprocess.getoutput('screen -S minecraft -X hardcopy /var/www/minecraft/playerMonitor')
     
     # Read the hardcopy file
-    with open('/tmp/mc_output', 'r') as f:
+    with open('/var/www/minecraft/playerMonitor', 'r') as f:
         lines = f.readlines()
     
     for line in lines:
