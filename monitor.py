@@ -33,10 +33,32 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             
             # Read the initial data from the connection (at least 3 bytes)
             data = conn.recv(3)
-            logging.info(f"Received {data}")
+            value, offset = decode_varint(data)
+            logging.info(f"Received {value}")
+            
             if len(data) < 3:
                 continue
 
             # Check if it's a login packet (value 2 after handshake packet ID)
             if data[2] == 2:
                 wake_up_minecraft()
+
+def decode_varint(data):
+    num_read = 0
+    result = 0
+    read = 0
+
+    while True:
+        byte = data[read]
+        read += 1
+        value = (byte & 0b01111111)
+        result |= (value << (7 * num_read))
+
+        num_read += 1
+        if num_read > 5:
+            raise Exception("VarInt is too big")
+
+        if (byte & 0b10000000) == 0:
+            break
+
+    return result, read
