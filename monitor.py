@@ -8,7 +8,7 @@ import time
 # Setup logging
 LOG_FILE_PATH = "/var/www/minecraft/monitor.log"
 logging.basicConfig(filename=LOG_FILE_PATH, level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s', filemode='a')
-IDLE_THRESHOLD = 60 #seconds
+IDLE_THRESHOLD = 30 * 60 #seconds
 
 HOST = '0.0.0.0'
 PORT = 25565
@@ -31,7 +31,7 @@ def wake_up_minecraft():
     logging.info("Waking up the server...")
     subprocess.call(["/bin/bash", "/var/www/minecraft/minecraft-wakeup.sh"])
 
-def check_players_and_shutdown():
+def check_players():
     # If the hardcopy file doesn't exist, create it
     if not os.path.exists('/var/www/minecraft/playerMonitor'):
         with open('/var/www/minecraft/playerMonitor', 'w') as f:
@@ -64,28 +64,38 @@ def check_players_and_shutdown():
             elif players_online > 0:
                 save_last_login_time(time.time())
 
-# Check if Minecraft server is already running
-if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
-    check_players_and_shutdown()
-    logging.info("Minecraft server is already running. Exiting monitor.")
-    exit()
-
-with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-    logging.info("Minecraft server is NOT already running. Continuing monitor.")
-    s.bind((HOST, PORT))
-    s.listen()
-    logging.info(f"Started listening on port {PORT}")
-
+def main():
     while True:
-        conn, addr = s.accept()
-        with conn:
-            remote_ip, remote_port = addr
-            local_ip, local_port = conn.getsockname()
-            
-            logging.info(f"Connection received from IP: {remote_ip}, Port: {remote_port}")
-            logging.info(f"Accepted on local IP: {local_ip}, Port: {local_port}")
+        # Check if Minecraft server is already running
+        if os.system("systemctl is-active --quiet minecraft-server.service") == 0:
+            check_players()
+            logging.info("Minecraft server is already running. Sleeping for a while before checking again.")
+            time.sleep(30)
+            continue
 
-        logging.info(f"Connection received from {addr}")
-        conn.close()  # Close the connection immediately after accepting it
-        wake_up_minecraft()
-        exit()
+        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
+            logging.info("Minecraft server is NOT already running. Continuing monitor.")
+            s.bind((HOST, PORT))
+            s.listen()
+            logging.info(f"Started listening on port {PORT}")
+
+            while True:
+                conn, addr = s.accept()
+                with conn:
+                    remote_ip, remote_port = addr
+                    local_ip, local_port = conn.getsockname()
+
+                    logging.info(f"Connection received from IP: {remote_ip}, Port: {remote_port}")
+                    logging.info(f"Accepted on local IP: {local_ip}, Port: {local_port}")
+
+                logging.info(f"Connection received from {addr}")
+                conn.close()  # Close the connection immediately after accepting it
+                wake_up_minecraft()
+                break  # Exit from the inner while loop to start player-checking again.
+
+
+if __name__ == "__main__":
+    try:
+        main()
+    except Exception as e:
+        logging.error(f"An error occurred: {e}")
