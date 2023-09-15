@@ -32,6 +32,11 @@ def wake_up_minecraft():
     subprocess.call(["/bin/bash", "/var/www/minecraft/minecraft-wakeup.sh"])
 
 def check_players_and_shutdown():
+    # If the hardcopy file doesn't exist, create it
+    if not os.path.exists('/var/www/minecraft/playerMonitor'):
+        with open('/var/www/minecraft/playerMonitor', 'w') as f:
+            pass  # Just creating the file
+        
     # Send the list command to the server and capture the output
     output = subprocess.getoutput('screen -S minecraft -X stuff "list\n"')
     time.sleep(2)  # give the server a second to respond
