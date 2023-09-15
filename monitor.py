@@ -16,10 +16,6 @@ PORT = 25565
 DEBOUNCE_TIME = 5
 last_attempt_time = 0
 
-def wake_up_minecraft():
-    logging.info("Waking up the server...")
-    subprocess.call(["/bin/bash", "/var/www/minecraft/minecraft-wakeup.sh"])
-
 with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
     s.bind((HOST, PORT))
     s.listen()
@@ -42,6 +38,10 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
             # Check if it's a login packet (value 2 after handshake packet ID)
             if data[2] == 2:
                 wake_up_minecraft()
+
+def wake_up_minecraft():
+    logging.info("Waking up the server...")
+    subprocess.call(["/bin/bash", "/var/www/minecraft/minecraft-wakeup.sh"])
 
 def decode_varint(data):
     num_read = 0
