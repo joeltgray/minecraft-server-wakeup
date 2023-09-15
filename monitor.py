@@ -36,3 +36,4 @@ with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
         logging.info(f"Connection received from {addr}")
         conn.close()  # Close the connection immediately after accepting it
         wake_up_minecraft()
+        exit()
